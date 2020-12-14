@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace H.Synthesizers
 {
-    public class ByteArrayCache
+    internal class ByteArrayCache
     {
         #region Properties
 
@@ -25,7 +25,7 @@ namespace H.Synthesizers
             Directory.CreateDirectory(Folder);
         }
 
-        public ByteArrayCache(Type type) : this(type?.Name)
+        public ByteArrayCache(Type type) : this(type.Name)
         {
         }
 

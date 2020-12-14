@@ -7,6 +7,9 @@ using H.Core.Synthesizers;
 
 namespace H.Synthesizers
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public abstract class CachedSynthesizer : Synthesizer, ISynthesizer
     {
         #region Properties
@@ -17,6 +20,9 @@ namespace H.Synthesizers
 
         #region Constructors
 
+        /// <summary>
+        /// 
+        /// </summary>
         protected CachedSynthesizer()
         {
             UseCache = true;
@@ -27,6 +33,12 @@ namespace H.Synthesizers
 
         #region ISynthesizer
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
         public async Task<byte[]> ConvertAsync(string text, CancellationToken cancellationToken = default)
         {
             var key = TextToKey(text);
@@ -40,8 +52,19 @@ namespace H.Synthesizers
             return bytes;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
         protected abstract Task<byte[]> InternalConvertAsync(string text, CancellationToken cancellationToken = default);
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
         protected abstract string TextToKey(string text);
 
         #endregion

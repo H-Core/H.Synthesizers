@@ -5,22 +5,55 @@ using System.Threading.Tasks;
 
 namespace H.Synthesizers
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public class YandexSynthesizer : CachedSynthesizer
     {
         #region Properties
 
+        /// <summary>
+        /// 
+        /// </summary>
         public string Key { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// 
+        /// </summary>
         public string Lang { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// 
+        /// </summary>
         public string Format { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// 
+        /// </summary>
         public string Speaker { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// 
+        /// </summary>
         public string Emotion { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// 
+        /// </summary>
         public string Quality { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// 
+        /// </summary>
         public string Speed { get; set; } = string.Empty;
 
         #endregion
 
         #region Constructors
 
+        /// <summary>
+        /// 
+        /// </summary>
         public YandexSynthesizer()
         {
             AddSetting(nameof(Key), o => Key = o, NoEmpty, string.Empty);
@@ -36,6 +69,12 @@ namespace H.Synthesizers
 
         #region Protected methods
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
         protected override async Task<byte[]> InternalConvertAsync(string text, CancellationToken cancellationToken = default)
         {
             text = text ?? throw new ArgumentNullException(nameof(text));
@@ -49,6 +88,11 @@ namespace H.Synthesizers
                 .ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
         protected override string TextToKey(string text) => $"{text}_{Speaker}_{Lang}_{Emotion}_{Speed}_{Format}_{Quality}";
 
         private static string? TextToLang(ref string text)
