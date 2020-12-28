@@ -15,7 +15,10 @@ namespace H.Synthesizers.WebSynthesizers.IntegrationTests
             using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
             var cancellationToken = cancellationTokenSource.Token;
 
-            using var synthesizer = new YandexSynthesizer();
+            using var synthesizer = new YandexSynthesizer
+            {
+                UseCache = false,
+            };
 
             var bytes = await synthesizer.ConvertAsync(nameof(ConvertTest), cancellationToken);
 
