@@ -57,7 +57,7 @@ namespace H.Synthesizers
         public YandexSynthesizer()
         {
             AddEnumerableSetting(nameof(Language), o => Language = o, NoEmpty, new[] { "en-US", "ru-RU", "tr-TR" });
-            AddEnumerableSetting(nameof(Format), o => Format = o, NoEmpty, new[] { "oggopus" });
+            AddEnumerableSetting(nameof(Format), o => Format = o, NoEmpty, new[] { "lpcm", "oggopus" });
             AddEnumerableSetting(nameof(Voice), o => Voice = o, NoEmpty, new[] { "alena", "oksana", "jane", "alyss", "omazh", "zahar", "ermil", "filipp" });
             AddEnumerableSetting(nameof(Emotion), o => Emotion = o, NoEmpty, new[] { "good", "evil", "neutral" });
             AddEnumerableSetting(nameof(Speed), o => Speed = o, NoEmpty, new[] { "1.0", "0.1", "0.25", "0.5", "0.75", "1.25", "1.5", "2.0", "3.0" });

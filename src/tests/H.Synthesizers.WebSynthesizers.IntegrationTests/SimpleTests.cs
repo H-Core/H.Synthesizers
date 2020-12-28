@@ -1,8 +1,9 @@
 using System;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using H.Recorders.Extensions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NAudio.Wave;
 
 namespace H.Synthesizers.WebSynthesizers.IntegrationTests
 {
@@ -22,7 +23,7 @@ namespace H.Synthesizers.WebSynthesizers.IntegrationTests
 
             var bytes = await synthesizer.ConvertAsync(nameof(ConvertTest), cancellationToken);
 
-            File.WriteAllBytes("D:/test.opus", bytes);
+            await bytes.PlayAsync(new WaveFormat(48000, 16, 1), cancellationToken);
         }
     }
 }
