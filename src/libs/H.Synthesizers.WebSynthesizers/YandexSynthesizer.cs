@@ -1,7 +1,12 @@
 ﻿using System;
+using System.Globalization;
+using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace H.Synthesizers
 {
@@ -15,12 +20,7 @@ namespace H.Synthesizers
         /// <summary>
         /// 
         /// </summary>
-        public string Key { get; set; } = string.Empty;
-        
-        /// <summary>
-        /// 
-        /// </summary>
-        public string Lang { get; set; } = string.Empty;
+        public string Language { get; set; } = string.Empty;
         
         /// <summary>
         /// 
@@ -30,7 +30,7 @@ namespace H.Synthesizers
         /// <summary>
         /// 
         /// </summary>
-        public string Speaker { get; set; } = string.Empty;
+        public string Voice { get; set; } = string.Empty;
         
         /// <summary>
         /// 
@@ -56,12 +56,10 @@ namespace H.Synthesizers
         /// </summary>
         public YandexSynthesizer()
         {
-            AddSetting(nameof(Key), o => Key = o, NoEmpty, string.Empty);
-            AddEnumerableSetting(nameof(Lang), o => Lang = o, NoEmpty, new []{ "en-US", "ru-RU", "uk-UK", "tr-TR" });
-            AddEnumerableSetting(nameof(Format), o => Format = o, NoEmpty, new[] { "wav", "mp3", "opus" });
-            AddEnumerableSetting(nameof(Speaker), o => Speaker = o, NoEmpty, new[] { "oksana", "jane", "alyss", "omazh", "zahar", "ermil" });
+            AddEnumerableSetting(nameof(Language), o => Language = o, NoEmpty, new []{ "en-US", "ru-RU", "tr-TR" });
+            AddEnumerableSetting(nameof(Format), o => Format = o, NoEmpty, new[] { "oggopus" });
+            AddEnumerableSetting(nameof(Voice), o => Voice = o, NoEmpty, new[] { "alena", "oksana", "jane", "alyss", "omazh", "zahar", "ermil", "filipp" });
             AddEnumerableSetting(nameof(Emotion), o => Emotion = o, NoEmpty, new[] { "good", "evil", "neutral" });
-            AddEnumerableSetting(nameof(Quality), o => Quality = o, NoEmpty, new[] { "hi", "lo" });
             AddEnumerableSetting(nameof(Speed), o => Speed = o, NoEmpty, new[] { "1.0", "0.1", "0.25", "0.5", "0.75", "1.25", "1.5", "2.0", "3.0" });
         }
 
@@ -78,14 +76,78 @@ namespace H.Synthesizers
         protected override async Task<byte[]> InternalConvertAsync(string text, CancellationToken cancellationToken = default)
         {
             text = text ?? throw new ArgumentNullException(nameof(text));
+            
+            var container = new CookieContainer();
+            using var handler = new HttpClientHandler
+            {
+                CookieContainer = container,
+            };
+            using var client = new HttpClient(handler, false);
 
-            var lang = TextToLang(ref text) ?? Lang;
-
-            using var client = new HttpClient();
-
-            return await client.GetByteArrayAsync(
-                $"https://tts.voicetech.yandex.net/generate?text={text}&format={Format}&lang={lang}&speaker={Speaker}&emotion={Emotion}&key={Key}&quality={Quality}&speed={Speed}")
+            await client.GetAsync(new Uri("https://cloud.yandex.ru/services/speechkit"), cancellationToken)
                 .ConfigureAwait(false);
+
+            var cookies = container.GetCookies(new Uri("https://cloud.yandex.ru/"));
+            var token = cookies["XSRF-TOKEN"]?.Value ?? throw new InvalidOperationException("XSRF-TOKEN is null.");
+
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Get, new Uri("https://cloud.yandex.ru/api/constructor/speechkit?"))
+                {
+                    Headers =
+                    {
+                        { "x-csrf-token", token.Replace("%3A", ":") },
+                    },
+                };
+
+                using var response = await client.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            }
+
+            {
+                var json = JsonConvert.SerializeObject(new YandexSettings
+                {
+                    Message = text,
+                    Language = Language,
+                    Speed = Convert.ToDouble(Speed, CultureInfo.InvariantCulture),
+                    Emotion = Emotion,
+                    Format = Format,
+                    //Voice = Voice,
+                }, new JsonSerializerSettings
+                {
+                    ContractResolver = new CamelCasePropertyNamesContractResolver(),
+                });
+                using var request = new HttpRequestMessage(HttpMethod.Post, new Uri("https://cloud.yandex.ru/api/speechkit/tts"))
+                {
+                    Content = new StringContent(json, Encoding.UTF8, "application/json"),
+                    Headers =
+                    {
+                        { "x-csrf-token", token.Replace("%3A", ":") },
+                        { "User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36" },
+                        { "sec-ch-ua", "\"Google Chrome\";v=\"87\", \" Not;A Brand\";v=\"99\", \"Chromium\";v=\"87\"" },
+                        { "sec-ch-ua-mobile", "?0" },
+                        { "Sec-Fetch-Dest", "empty" },
+                        { "Sec-Fetch-Mode", "cors" },
+                        { "Sec-Fetch-Site", "same-origin" },
+                        { "Referer", "https://cloud.yandex.ru/services/speechkit" },
+                        { "Pragma", "no-cache" },
+                        { "Origin", "https://cloud.yandex.ru" },
+                        { "Host", "cloud.yandex.ru" },
+                    },
+                };
+
+                using var response = await client.SendAsync(request, cancellationToken).ConfigureAwait(false);
+
+                var value = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                try
+                {
+                    response.EnsureSuccessStatusCode();
+                }
+                catch (HttpRequestException exception)
+                {
+                    throw new InvalidOperationException(value, exception);
+                }
+
+                return await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+            }
         }
 
         /// <summary>
@@ -93,18 +155,9 @@ namespace H.Synthesizers
         /// </summary>
         /// <param name="text"></param>
         /// <returns></returns>
-        protected override string TextToKey(string text) => $"{text}_{Speaker}_{Lang}_{Emotion}_{Speed}_{Format}_{Quality}";
-
-        private static string? TextToLang(ref string text)
+        protected override string TextToKey(string text)
         {
-            if (text.Contains("[EN]"))
-            {
-                text = text.Replace("[EN]", string.Empty).TrimStart();
-
-                return "en-US";
-            }
-
-            return null;
+            return $"{text}_{Voice}_{Language}_{Emotion}_{Speed}_{Format}_{Quality}";
         }
 
         #endregion

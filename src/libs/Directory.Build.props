@@ -2,6 +2,11 @@
 
   <Import Project="..\Directory.Build.props" />
 
+  <PropertyGroup Label="Signing">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>$(SolutionDir)\src\key.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
   <PropertyGroup Label="Nuget">
     <Version>0.13.9</Version>
     <PackageReleaseNotes>To H.Core 0.13.9.</PackageReleaseNotes>

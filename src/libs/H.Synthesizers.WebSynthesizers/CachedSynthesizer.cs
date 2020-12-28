@@ -2,7 +2,6 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using H.Core;
 using H.Core.Synthesizers;
 
 namespace H.Synthesizers
@@ -44,7 +43,7 @@ namespace H.Synthesizers
             var key = TextToKey(text);
             if (UseCache && Cache.Contains(key))
             {
-                return Cache[key]?.ToArray() ?? Array.Empty<byte>();
+                //return Cache[key]?.ToArray() ?? Array.Empty<byte>();
             }
 
             var bytes = await InternalConvertAsync(text, cancellationToken).ConfigureAwait(false);
