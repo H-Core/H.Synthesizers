@@ -8,8 +8,11 @@
   </PropertyGroup>
 
   <PropertyGroup Label="Nuget">
-    <Version>0.13.9</Version>
-    <PackageReleaseNotes>To H.Core 0.13.9.</PackageReleaseNotes>
+    <Version>0.18.4</Version>
+    <PackageReleaseNotes>
+      To H.Core 0.18.4.
+      Fixed YandexConverter.
+    </PackageReleaseNotes>
     <GeneratePackageOnBuild Condition=" '$(Configuration)' == 'Release' ">true</GeneratePackageOnBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IncludeSymbols>true</IncludeSymbols>
