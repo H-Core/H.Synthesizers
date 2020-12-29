@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
+using H.Core;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
@@ -71,9 +72,13 @@ namespace H.Synthesizers
         /// 
         /// </summary>
         /// <param name="text"></param>
+        /// <param name="format"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        protected override async Task<byte[]> InternalConvertAsync(string text, CancellationToken cancellationToken = default)
+        protected override async Task<byte[]> InternalConvertAsync(
+            string text, 
+            AudioFormat format = AudioFormat.Raw, 
+            CancellationToken cancellationToken = default)
         {
             text = text ?? throw new ArgumentNullException(nameof(text));
 

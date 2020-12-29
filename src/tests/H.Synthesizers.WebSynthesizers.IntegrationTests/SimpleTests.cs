@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using H.Core;
 using H.Recorders;
 using H.Recorders.Extensions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -40,7 +41,7 @@ namespace H.Synthesizers.WebSynthesizers.IntegrationTests
                 UseCache = false,
             };
 
-            var bytes = await synthesizer.ConvertAsync(nameof(ConvertTest), cancellationToken);
+            var bytes = await synthesizer.ConvertAsync(nameof(ConvertTest), AudioFormat.Raw, cancellationToken);
 
             await bytes.PlayAsync(new WaveFormat(48000, 16, 1), cancellationToken);
         }
