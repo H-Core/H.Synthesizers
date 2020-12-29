@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using H.Core.Utilities;
 
 namespace H.Synthesizers
 {
@@ -45,7 +46,7 @@ namespace H.Synthesizers
 
                 return File.ReadAllBytes(path);
             }
-            set => File.WriteAllBytes(GetPath(text), value?.ToArray() ?? Array.Empty<byte>());
+            set => File.WriteAllBytes(GetPath(text), value?.ToArray() ?? EmptyArray<byte>.Value);
         }
 
         public void Clear() => Directory.EnumerateFiles(Folder).ToList().ForEach(File.Delete);

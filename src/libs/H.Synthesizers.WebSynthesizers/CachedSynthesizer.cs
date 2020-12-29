@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using H.Core;
 using H.Core.Synthesizers;
+using H.Core.Utilities;
 
 namespace H.Synthesizers
 {
@@ -45,7 +46,7 @@ namespace H.Synthesizers
             var key = TextToKey(text);
             if (UseCache && Cache.Contains(key))
             {
-                return Cache[key]?.ToArray() ?? Array.Empty<byte>();
+                return Cache[key]?.ToArray() ?? EmptyArray<byte>.Value;
             }
 
             var bytes = await InternalConvertAsync(text, format, cancellationToken).ConfigureAwait(false);
