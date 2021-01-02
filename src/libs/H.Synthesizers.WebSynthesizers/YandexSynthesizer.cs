@@ -26,11 +26,6 @@ namespace H.Synthesizers
         /// <summary>
         /// 
         /// </summary>
-        public string Format { get; set; } = string.Empty;
-
-        /// <summary>
-        /// 
-        /// </summary>
         public string Voice { get; set; } = string.Empty;
 
         /// <summary>
@@ -58,10 +53,12 @@ namespace H.Synthesizers
         public YandexSynthesizer()
         {
             AddEnumerableSetting(nameof(Language), o => Language = o, NoEmpty, new[] { "en-US", "ru-RU", "tr-TR" });
-            AddEnumerableSetting(nameof(Format), o => Format = o, NoEmpty, new[] { "lpcm", "oggopus" });
             AddEnumerableSetting(nameof(Voice), o => Voice = o, NoEmpty, new[] { "alena", "oksana", "jane", "alyss", "omazh", "zahar", "ermil", "filipp" });
             AddEnumerableSetting(nameof(Emotion), o => Emotion = o, NoEmpty, new[] { "good", "evil", "neutral" });
             AddEnumerableSetting(nameof(Speed), o => Speed = o, NoEmpty, new[] { "1.0", "0.1", "0.25", "0.5", "0.75", "1.25", "1.5", "2.0", "3.0" });
+
+            SupportedSettings.Add(new AudioSettings(AudioFormat.Raw, 48000));
+            SupportedSettings.Add(new AudioSettings(AudioFormat.Ogg));
         }
 
         #endregion
@@ -72,15 +69,16 @@ namespace H.Synthesizers
         /// 
         /// </summary>
         /// <param name="text"></param>
-        /// <param name="format"></param>
+        /// <param name="settings"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
         protected override async Task<byte[]> InternalConvertAsync(
-            string text, 
-            AudioFormat format = AudioFormat.Raw, 
+            string text,
+            AudioSettings settings,
             CancellationToken cancellationToken = default)
         {
             text = text ?? throw new ArgumentNullException(nameof(text));
+            settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
             using var handler = new HttpClientHandler();
             using var client = new HttpClient(handler, false);
@@ -103,7 +101,11 @@ namespace H.Synthesizers
                 },
                 Speed = Convert.ToDouble(Speed, CultureInfo.InvariantCulture),
                 Emotion = Emotion,
-                Format = Format,
+                Format = settings.Format switch
+                {
+                    AudioFormat.Ogg => "oggopus",
+                    _ or AudioFormat.Raw => "lpcm",
+                },
                 Voice = Voice,
             }, new JsonSerializerSettings
             {
@@ -137,10 +139,14 @@ namespace H.Synthesizers
         /// 
         /// </summary>
         /// <param name="text"></param>
+        /// <param name="settings"></param>
         /// <returns></returns>
-        protected override string TextToKey(string text)
+        protected override string TextToKey(string text, AudioSettings settings)
         {
-            return $"{text}_{Voice}_{Language}_{Emotion}_{Speed}_{Format}_{Quality}";
+            text = text ?? throw new ArgumentNullException(nameof(text));
+            settings = settings ?? throw new ArgumentNullException(nameof(settings));
+
+            return $"{text}_{Voice}_{Language}_{Emotion}_{Speed}_{Quality}_{settings.Format}";
         }
 
         #endregion

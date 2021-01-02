@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using H.Core;
@@ -38,18 +37,20 @@ namespace H.Synthesizers
         /// 
         /// </summary>
         /// <param name="text"></param>
-        /// <param name="format"></param>
+        /// <param name="settings"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        public override async Task<byte[]> ConvertAsync(string text, AudioFormat format = AudioFormat.Raw, CancellationToken cancellationToken = default)
+        public override async Task<byte[]> ConvertAsync(string text, AudioSettings? settings = null, CancellationToken cancellationToken = default)
         {
-            var key = TextToKey(text);
+            settings ??= SupportedSettings.First();
+
+            var key = TextToKey(text, settings);
             if (UseCache && Cache.Contains(key))
             {
                 return Cache[key]?.ToArray() ?? EmptyArray<byte>.Value;
             }
 
-            var bytes = await InternalConvertAsync(text, format, cancellationToken).ConfigureAwait(false);
+            var bytes = await InternalConvertAsync(text, settings, cancellationToken).ConfigureAwait(false);
             Cache[key] = bytes;
             return bytes;
         }
@@ -58,17 +59,18 @@ namespace H.Synthesizers
         /// 
         /// </summary>
         /// <param name="text"></param>
-        /// <param name="format"></param>
+        /// <param name="settings"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        protected abstract Task<byte[]> InternalConvertAsync(string text, AudioFormat format = AudioFormat.Raw, CancellationToken cancellationToken = default);
+        protected abstract Task<byte[]> InternalConvertAsync(string text, AudioSettings settings, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// 
         /// </summary>
         /// <param name="text"></param>
+        /// <param name="settings"></param>
         /// <returns></returns>
-        protected abstract string TextToKey(string text);
+        protected abstract string TextToKey(string text, AudioSettings settings);
 
         #endregion
     }

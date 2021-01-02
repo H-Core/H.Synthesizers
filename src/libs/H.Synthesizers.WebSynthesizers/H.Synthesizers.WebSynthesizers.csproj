@@ -7,7 +7,7 @@
 
   <PropertyGroup Label="NuGet">
     <Description>Contains YandexSynthesizer with Cache support.</Description>
-    <PackageTags>synthesizer, yandex, text-to-speech</PackageTags>
+    <PackageTags>synthesizer, yandex, text-to-speech, h.core, h.framework</PackageTags>
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net4.5' ">
@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="H.Core" Version="0.19.4" />
+    <PackageReference Include="H.Core" Version="0.20.2" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
   </ItemGroup>
 
