@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using H.Core.Synthesizers;
 using H.Recorders;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -38,11 +39,8 @@ namespace H.Synthesizers.WebSynthesizers.IntegrationTests
                 UseCache = false,
             };
             using var player = new NAudioPlayer();
-            var settings = synthesizer.SupportedSettings.First();
 
-            var bytes = await synthesizer.ConvertAsync(nameof(ConvertTest), settings, cancellationToken);
-
-            await player.PlayAsync(bytes, settings, cancellationToken);
+            await synthesizer.PlayAsync(player, nameof(ConvertTest), cancellationToken);
         }
     }
 }
