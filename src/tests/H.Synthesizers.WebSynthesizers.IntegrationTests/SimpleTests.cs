@@ -41,6 +41,8 @@ namespace H.Synthesizers.WebSynthesizers.IntegrationTests
             using var player = new NAudioPlayer();
 
             await synthesizer.PlayAsync(player, nameof(ConvertTest), cancellationToken);
+            await synthesizer.PlayAsync(player, nameof(ConvertTest), cancellationToken);
+            await synthesizer.PlayAsync(player, nameof(ConvertTest), cancellationToken);
         }
     }
 }

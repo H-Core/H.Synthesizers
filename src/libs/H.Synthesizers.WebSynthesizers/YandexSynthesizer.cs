@@ -14,7 +14,7 @@ namespace H.Synthesizers
     /// <summary>
     /// 
     /// </summary>
-    public class YandexSynthesizer : CachedSynthesizer
+    public sealed class YandexSynthesizer : CachedSynthesizer
     {
         #region Properties
 
@@ -43,6 +43,9 @@ namespace H.Synthesizers
         /// </summary>
         public string Speed { get; set; } = string.Empty;
 
+        private HttpClientHandler HttpClientHandler { get; }
+        private HttpClient HttpClient { get; }
+
         #endregion
 
         #region Constructors
@@ -52,6 +55,9 @@ namespace H.Synthesizers
         /// </summary>
         public YandexSynthesizer()
         {
+            HttpClientHandler = new HttpClientHandler();
+            HttpClient = new HttpClient(HttpClientHandler, false);
+
             AddEnumerableSetting(nameof(Language), o => Language = o, NoEmpty, new[] { "en-US", "ru-RU", "tr-TR" });
             AddEnumerableSetting(nameof(Voice), o => Voice = o, NoEmpty, new[] { "alena", "oksana", "jane", "alyss", "omazh", "zahar", "ermil", "filipp" });
             AddEnumerableSetting(nameof(Emotion), o => Emotion = o, NoEmpty, new[] { "good", "evil", "neutral" });
@@ -64,6 +70,13 @@ namespace H.Synthesizers
         #endregion
 
         #region Protected methods
+
+        private string? GetXsrfToken()
+        {
+            var cookies = HttpClientHandler.CookieContainer.GetCookies(new Uri("https://cloud.yandex.ru/"));
+
+            return cookies["XSRF-TOKEN"]?.Value;
+        }
 
         /// <summary>
         /// 
@@ -80,59 +93,67 @@ namespace H.Synthesizers
             text = text ?? throw new ArgumentNullException(nameof(text));
             settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
-            using var handler = new HttpClientHandler();
-            using var client = new HttpClient(handler, false);
-
-            await client.GetAsync(new Uri("https://cloud.yandex.ru/services/speechkit"), cancellationToken)
-                .ConfigureAwait(false);
-
-            var cookies = handler.CookieContainer.GetCookies(new Uri("https://cloud.yandex.ru/"));
-            var token = cookies["XSRF-TOKEN"]?.Value ??
-                        throw new InvalidOperationException("XSRF-TOKEN is null.");
-
-            var json = JsonConvert.SerializeObject(new YandexSettings
+            var token = GetXsrfToken();
+            for (var i = 0; token == null && i < 5; i++)
             {
-                Message = text,
-                Language = Voice switch
-                {
-                    "alena" => "ru-RU",
-                    "filipp" => "ru-RU",
-                    _ => Language,
-                },
-                Speed = Convert.ToDouble(Speed, CultureInfo.InvariantCulture),
-                Emotion = Emotion,
-                Format = settings.Format switch
-                {
-                    AudioFormat.Ogg => "oggopus",
-                    _ or AudioFormat.Raw => "lpcm",
-                },
-                Voice = Voice,
-            }, new JsonSerializerSettings
-            {
-                ContractResolver = new CamelCasePropertyNamesContractResolver(),
-            });
-            using var request = new HttpRequestMessage(HttpMethod.Post, new Uri("https://cloud.yandex.ru/api/speechkit/tts"))
-            {
-                Content = new StringContent(json, Encoding.UTF8, "application/json"),
-                Headers =
-                {
-                    { "x-csrf-token", HttpUtility.UrlDecode(token) },
-                },
-            };
+                await HttpClient.GetAsync(new Uri("https://cloud.yandex.ru/services/speechkit"), cancellationToken)
+                    .ConfigureAwait(false);
 
-            using var response = await client.SendAsync(request, cancellationToken).ConfigureAwait(false);
-
-            var value = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-            try
-            {
-                response.EnsureSuccessStatusCode();
-            }
-            catch (HttpRequestException exception)
-            {
-                throw new InvalidOperationException(value, exception);
+                token = GetXsrfToken();
             }
 
-            return await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+            var bytes = (byte[]?) null;
+            var lastException = (Exception?) null;
+            for (var i = 0; bytes == null && i < 5; i++)
+            {
+                var json = JsonConvert.SerializeObject(new YandexSettings
+                {
+                    Message = text,
+                    Language = Voice switch
+                    {
+                        "alena" => "ru-RU",
+                        "filipp" => "ru-RU",
+                        _ => Language,
+                    },
+                    Speed = Convert.ToDouble(Speed, CultureInfo.InvariantCulture),
+                    Emotion = Emotion,
+                    Format = settings.Format switch
+                    {
+                        AudioFormat.Ogg => "oggopus",
+                        _ or AudioFormat.Raw => "lpcm",
+                    },
+                    Voice = Voice,
+                }, new JsonSerializerSettings
+                {
+                    ContractResolver = new CamelCasePropertyNamesContractResolver(),
+                });
+                using var request = new HttpRequestMessage(HttpMethod.Post, new Uri("https://cloud.yandex.ru/api/speechkit/tts"))
+                {
+                    Content = new StringContent(json, Encoding.UTF8, "application/json"),
+                    Headers =
+                    {
+                        { "x-csrf-token", HttpUtility.UrlDecode(token) },
+                    },
+                };
+
+                using var response = await HttpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+
+                var value = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                try
+                {
+                    response.EnsureSuccessStatusCode();
+
+                    bytes = await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+                }
+                catch (HttpRequestException exception)
+                {
+                    lastException = new InvalidOperationException(value, exception);
+                }
+            }
+
+            lastException ??= new InvalidOperationException("Bytes is null.");
+
+            return bytes ?? throw lastException;
         }
 
         /// <summary>
@@ -147,6 +168,17 @@ namespace H.Synthesizers
             settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
             return $"{text}_{Voice}_{Language}_{Emotion}_{Speed}_{Quality}_{settings.Format}";
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public override void Dispose()
+        {
+            HttpClient.Dispose();
+            HttpClientHandler.Dispose();
+
+            base.Dispose();
         }
 
         #endregion
